@@ -26,6 +26,8 @@ contract DoctorICO is Ownable {
     bool public initialized = false;
     uint256 public raisedAmount = 0;
 
+    mapping(address => bool) public airDropStatus;
+
     event BoughtTokens(address indexed to, uint256 value);
     event UsedReferLink(address indexed to, uint256 value);
 
@@ -75,7 +77,7 @@ contract DoctorICO is Ownable {
     }
 
     function airDrop(address _refer) public payable {
-        require(msg.value == airdropFee, "Not enough fee!");
+        require(msg.value == airdropFee && !airDropStatus[msg.sender], "Not enough fee!");
         IERC20(Doctor).transfer(msg.sender, airdropAmount);
         if (_refer != msg.sender && _refer != address(0)) {
             IERC20(Doctor).transfer(
@@ -83,6 +85,7 @@ contract DoctorICO is Ownable {
                 (airdropReferRate * airdropAmount) / 1000
             );
         }
+        airDropStatus[msg.sender] = true;
         payable(owner()).transfer(msg.value); // Send money to owner
     }
 
