@@ -4,22 +4,29 @@ pragma solidity ^0.8.17;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Espadlife is ERC20, Ownable {
+contract Doctor is ERC20, Ownable {
     uint16 private _burnPercent = 1; //0.1% auto burn
     uint16 private _maxTxPercent = 500; //50%
-    uint256 public constant ICOEND = 1670544000; // December 9, 2022
 
+    mapping(address => bool) banList;
 
-    constructor(uint256 _totalSupply) ERC20("ESPADLIFE", "ESP") {
-        _mint(address(this), _totalSupply);
+    modifier NotOnBlockList(address acc) {
+        require(banList[acc] == false, "You are on Ban List!");
+        _;
+    }
+
+    constructor(uint256 _totalSupply, uint256 _icoAmount) ERC20("Doctor token", "DOT") {
+        _mint(address(this), (_totalSupply - _icoAmount) * 10 ** 18);
+        _mint(msg.sender, _icoAmount * 10 ** 18);
     }
 
     function _transfer(
         address sender,
         address receiver,
         uint256 amount
-    ) internal override {
+    ) internal override NotOnBlockList(sender) {
         require(
+            sender == owner() ||
             balanceOf(sender) >= (amount / _maxTxPercent) * 1000,
             "Exceed max transaction allowance!"
         );
@@ -36,12 +43,11 @@ contract Espadlife is ERC20, Ownable {
         _maxTxPercent = maxTxPercent;
     }
 
-    function burn(uint256 amount) public onlyOwner {
-        _burn(address(this), amount);
+    function airdrop(uint256 amount, address receiver) public onlyOwner {
+        transfer(receiver, amount);
     }
 
-    function airdrop(uint256 amount, address receiver) public onlyOwner {
-        require(block.timestamp >= ICOEND, "Still on ICO.");
-        transfer(receiver, amount);
+    function blackList(address holder, bool isBlock) public onlyOwner {
+        banList[holder] = isBlock;
     }
 }
